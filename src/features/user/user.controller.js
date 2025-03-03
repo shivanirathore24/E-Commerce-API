@@ -14,10 +14,10 @@ export default class UserController {
     } else {
       //1. Create token
       const token = jwt.sign(
-        { userID: result.id, email: result.email },
-        "N6BUpqT7VL8cI7VbzLHaaS9txwGJWZMR",
+        { userID: result.id, email: result.email }, // Payload data
+        "N6BUpqT7VL8cI7VbzLHaaS9txwGJWZMR", // Secret key for signing
         {
-          expiresIn: "1h",
+          expiresIn: "1h",   // Token expiry set to 1 hour
         }
       );
       //2. Send token.
