@@ -20,6 +20,7 @@ productRouter.post(
   upload.single("imageUrl"),
   productController.addProduct
 );
+productRouter.post("/rate", productController.rateProduct);
 
 /* Define dynamic route last */
 productRouter.get("/:id", productController.getOneProduct);
