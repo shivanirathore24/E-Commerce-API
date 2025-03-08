@@ -480,6 +480,7 @@ understand and interact with our APIs.
 - We will use the `swagger-ui-express` package to implement Swagger in our
   application. (Link)
 - Install the package using the command: `
+
 ```bash
   npm install swagger-ui-express
 ```
@@ -489,16 +490,16 @@ understand and interact with our APIs.
 1. Create a JSON file called `swagger.json` to define the API documentation.
 2. Start by specifying the Swagger version as 2.0.
 3. Provide basic information about your API, including the version, description,
-  and title.
+   and title.
 4. Define the `host` where your API is hosted (e.g., `localhost:3000`).
 5. Specify the paths for your API endpoints (e.g., `/api/products`,
-  `/api/users/signin`).
+   `/api/users/signin`).
 6. For each path, define the request methods (e.g., GET, POST) and include a
-  summary and description.
+   summary and description.
 7. Define the parameters for each request, such as query parameters or request
-  body.
+   body.
 8. Specify the expected responses for each request, including status codes and
-  descriptions.
+   descriptions.
 
 #### swagger.json file:
 
@@ -508,7 +509,7 @@ understand and interact with our APIs.
   "info": {
     "version": "1.0.0",
     "description": "API for E-Commerce application",
-    "title": "E-commerce API"
+    "title": "E-Commerce API"
   },
   "host": "localhost:3000",
   "paths": {
@@ -552,11 +553,11 @@ understand and interact with our APIs.
 ### Configuring Swagger in the Express Server
 
 1. Import the `swagger-ui-express` and `swagger.json` files into your Express
-  server.
+   server.
 2. Create a route (e.g., `/api-docs/` or `/api/docs`) to expose the Swagger UI.
 3. Use the `swagger.serve` middleware to create the Swagger UI.
 4. Configure the Swagger UI using `swagger.setup` and pass the imported
-  `swagger.json` object
+   `swagger.json` object
 
 ```javascript
 import swagger from "swagger-ui-express";
@@ -576,3 +577,112 @@ server.use("/api-docs", swagger.serve, swagger.setup(apiDocs));
 <img src="./images/swagger_api_docs1.png" alt="API Docs Swagger" width="700" height="auto">
 
 <img src="./images/swagger_post_api_users_signin.png" alt="Swagger User SignIn" width="700" height="auto">
+
+## Testing Swagger
+
+We have implemented Swagger in our Node.js Express application and created
+documentation for the sign-in API. Now, we will explore how to test our API using the
+Swagger UI.
+
+<img src="./images/swagger_api_docs2.png" alt="API Docs Swagger" width="700" height="auto">
+
+### Testing the Sign-In API
+
+1. In the Swagger UI, locate the sign-in API documentation.
+2. Click on "Try it out" and enter the predefined credentials.
+
+<img src="./images/swagger_userSignIn_execute.png" alt="Swagger User SignIn Execute" width="700" height="auto">
+
+3. Execute the request and verify the response.
+4. The response should include a token that can be used for subsequent API
+   calls.
+
+<img src="./images/swagger_userSignIn_response.png" alt="Swagger User SignIn Response" width="700" height="auto">
+
+### Testing the Get-Products API
+
+1. Authorize: Copy the JWT token from the sign-in response, click "Authorize" at the top, paste the token, click the "Authorize" button, and then close.
+
+<img src="./images/swagger_authorize_jwtToken.png" alt="Swagger Authorize JWT token" width="700" height="auto">
+
+<img src="./images/swagger_authorization_success.png" alt="Swagger Authorization Successful" width="700" height="auto">
+
+2. Execute: Click "Try it out" for the Get Products API and execute.
+
+<img src="./images/swagger_getProducts_execute.png" alt="Swagger Get Products Execute" width="700" height="auto">
+
+3. Verify: If authorization is successful, the response includes all products for future API calls.
+
+<img src="./images/swagger_getProducts_response.png" alt="Swagger Get Products Response" width="700" height="auto">
+
+#### Updated 'swagger.json' file:
+
+```json
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "1.0.0",
+    "description": "API for E-Commerce application",
+    "title": "E-Commerce API"
+  },
+  "host": "localhost:3000",
+  "securityDefinitions": {
+    "JWT": {
+      "in": "header",
+      "name": "Authorization",
+      "type": "apiKey"
+    }
+  },
+  "paths": {
+    "/api/products": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Get Products",
+        "description": "User will get all products",
+        "security": [{ "JWT": {} }],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/users/signin": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Login",
+        "description": "User login to get token",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "User Credentials",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string"
+                },
+                "password": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Invalid Credentials !"
+          }
+        }
+      }
+    }
+  }
+}
+```
