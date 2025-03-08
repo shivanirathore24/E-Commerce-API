@@ -429,36 +429,150 @@ delete(req, res) {
 
 <img src="./images/getCartItems_afterDelete.png" alt="Get User Specific CartItems" width="650" height="auto">
 
-
 ## API Documentation
+
 We will discuss the importance of API documentation and how it helps clients
 understand and use our APIs effectively. We will explore the OpenAPI specification,
 which provides a standardized means to define and document APIs. Additionally, we
 will introduce Swagger as a popular tool for implementing API documentation.
+
 ### The Need for API Documentation
+
 1. Clients need clear instructions on how to use APIs.
 2. As developers, we may not know who our clients will be.
 3. API documentation makes it easier for clients to understand and use our APIs.
 
 ### OpenAPI Specification
+
 1. [OpenAPI](https://www.openapis.org/) is a widely adopted specification for documenting APIs.
 2. It provides a standardized way to define APIs and communicate their
-functionality to clients.
+   functionality to clients.
 3. OpenAPI allows clients to quickly understand how an API works, configure
-infrastructure, generate client code, and create test cases.
+   infrastructure, generate client code, and create test cases.
+
 ### Swagger for API Documentation
+
 1. [Swagger](https://swagger.io/) is an implementation of the OpenAPI specification.
 2. It helps developers create interactive API documentation for their APIs.
 3. Swagger provides a user-friendly interface that allows clients to explore and understand the API's endpoints, request methods, parameters, and responses.
 
 ### Example: COVID Vaccination API Documentation
+
 1. Government of India provided an API for booking COVID vaccination
-appointments.
+   appointments.
 2. Applications like Paytm and Arogya Setu implemented this API to enable
-appointment bookings.
+   appointment bookings.
 3. The API documentation followed the Swagger format.
 4. Clients could understand the API endpoints, request methods, parameters,
-request/response formats, and error codes through the Swagger
-documentation
+   request/response formats, and error codes through the Swagger
+   documentation
 
 <img src="./images/cowin_api_swagger.png" alt="CoWin API Swagger" width="600" height="auto">
+
+## Using Swagger
+
+Implementing Swagger in our Node.js API application. Swagger is a tool that helps
+us generate API documentation and provides a user-friendly interface for clients to
+understand and interact with our APIs.
+
+### Installing Swagger UI Express
+
+- We will use the `swagger-ui-express` package to implement Swagger in our
+  application. (Link)
+- Install the package using the command: `
+```bash
+  npm install swagger-ui-express
+```
+
+### Creating a Swagger JSON File
+
+1. Create a JSON file called `swagger.json` to define the API documentation.
+2. Start by specifying the Swagger version as 2.0.
+3. Provide basic information about your API, including the version, description,
+  and title.
+4. Define the `host` where your API is hosted (e.g., `localhost:3000`).
+5. Specify the paths for your API endpoints (e.g., `/api/products`,
+  `/api/users/signin`).
+6. For each path, define the request methods (e.g., GET, POST) and include a
+  summary and description.
+7. Define the parameters for each request, such as query parameters or request
+  body.
+8. Specify the expected responses for each request, including status codes and
+  descriptions.
+
+#### swagger.json file:
+
+```json
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "1.0.0",
+    "description": "API for E-Commerce application",
+    "title": "E-commerce API"
+  },
+  "host": "localhost:3000",
+  "paths": {
+    "/api/users/signin": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Login",
+        "description": "User login to get token",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "User Credentials",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string"
+                },
+                "password": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Invalid Credentials !"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+### Configuring Swagger in the Express Server
+
+1. Import the `swagger-ui-express` and `swagger.json` files into your Express
+  server.
+2. Create a route (e.g., `/api-docs/` or `/api/docs`) to expose the Swagger UI.
+3. Use the `swagger.serve` middleware to create the Swagger UI.
+4. Configure the Swagger UI using `swagger.setup` and pass the imported
+  `swagger.json` object
+
+```javascript
+import swagger from "swagger-ui-express";
+import apiDocs from "./swagger.json" with { type: "json" };
+
+server.use("/api-docs", swagger.serve, swagger.setup(apiDocs));
+```
+
+### Testing the Swagger UI
+
+- Start the server and navigate to the Swagger UI route (e.g.,
+  `http://localhost:3000/api-docs/`).
+- Verify that the Swagger UI displays your API documentation.
+- Clients can now use the Swagger UI to explore and test your API directly from
+  the browser
+
+<img src="./images/swagger_api_docs1.png" alt="API Docs Swagger" width="700" height="auto">
+
+<img src="./images/swagger_post_api_users_signin.png" alt="Swagger User SignIn" width="700" height="auto">
