@@ -304,7 +304,7 @@ server.listen(PORT, () => {
 ```javascript
 export default class ProductModel {
   constructor(id, name, desc, price, imageUrl, category, sizes) {
-    this.ide = id;
+    this.id = id;
     this.name = name;
     this.desc = desc;
     this.price = price;
@@ -499,11 +499,15 @@ In VS Code terminal:
 ## Add Product API
 
 ### 1. Code for fileupload.middleware.js:
+
 Purpose: Configures multer to handle file uploads.
+
 #### Key Features:
-  - Stores uploaded files in the ./uploads/ directory.
-  - Renames files by appending a timestamp to avoid conflicts.
-  - upload middleware is exported for use in routes.
+
+- Stores uploaded files in the ./uploads/ directory.
+- Renames files by appending a timestamp to avoid conflicts.
+- upload middleware is exported for use in routes.
+
 ```javascript
 // 1. Import Multer
 import multer from "multer";
@@ -522,12 +526,13 @@ export const upload = multer({ storage: storage });
 ```
 
 ### 2. Code for product.model.js file:
+
 add(product): Assigns an id to the product and adds it to the products array.
 
 ```javascript
 export default class ProductModel {
   constructor(id, name, desc, price, imageUrl, category, sizes) {
-    this.ide = id;
+    this.id = id;
     this.name = name;
     this.desc = desc;
     this.price = price;
@@ -578,12 +583,14 @@ var products = [
 ```
 
 ### 3. Code for product.controller.js:
+
 Implemented addProduct(req, res):
-  - Extracts product details (name, price, sizes) from the request body.
-  - Converts price to a floating number and sizes to an array.
-  - Assigns the uploaded image filename (req.file.filename).
-  - Calls ProductModel.add() to save the new product.
-  - Returns the newly created product as a response.
+
+- Extracts product details (name, price, sizes) from the request body.
+- Converts price to a floating number and sizes to an array.
+- Assigns the uploaded image filename (req.file.filename).
+- Calls ProductModel.add() to save the new product.
+- Returns the newly created product as a response.
 
 ```javascript
 import ProductModel from "./product.model.js";
@@ -611,9 +618,12 @@ export default class ProductController {
 ```
 
 ### 4. Code for product.routes.js file:
+
 productRouter.post("/"):
-  - Uses upload.single("imageUrl") to handle single-file image uploads.
-  - Calls productController.addProduct to add a product.
+
+- Uses upload.single("imageUrl") to handle single-file image uploads.
+- Calls productController.addProduct to add a product.
+
 ```javascript
 productRouter.post(
   "/",
@@ -621,26 +631,123 @@ productRouter.post(
   productController.addProduct
 );
 ```
+
 ### 5. Test API using Postman
+
 <img src="./images/addProduct_postman.png" alt="Add Product API" width="600" height="auto">
 
+## Fixed Bug: Add Products API
+
+### 1. 'product.controller.js' file:
+```javascript
+ addProduct(req, res) {
+    const { name, desc, price, imageUrl, category, sizes } = req.body;
+    const newProduct = {
+      name,
+      desc: desc || "No description available",
+      price: parseFloat(price),
+      imageUrl: req.file ? req.file.filename : imageUrl,
+      category: category || "Uncategorized",
+      sizes: Array.isArray(sizes)
+        ? sizes
+        : typeof sizes === "string"
+        ? sizes.split(",")
+        : [],
+    };
+    const createdRecord = ProductModel.add(newProduct);
+    res.status(201).send(createdRecord);
+  }
+```
+#### Changes & Reasons:
+1. Added desc (description) field → Provides a default "No description available" if not given.
+2. Added category field → Defaults to "Uncategorized" if not provided.
+3. Improved imageUrl handling → Uses uploaded file (req.file.filename) if available; otherwise, it takes imageUrl from the request body.
+4. Enhanced sizes handling → Ensures sizes is always an array, whether provided as a string ("S,M,L") or an actual array (["S", "M", "L"]).
+
+### 2. 'product.model.js' file:
+#### Before Change:
+```javascript
+static add(product) {
+  product.id = products.length + 1; // 'id' is added here
+  products.push(product); // Then product is pushed
+  return product;
+}
+```
+Why does id appear last?
+- product already exists as an object when passed to add(product).
+- id is added later (product.id = ...), so JavaScript places it at the end of the object.
+- Then, the modified object is pushed into products.
+
+#### After Change:
+```javascript
+static add(product) {
+    product = { id: products.length + 1, ...product }; // Reassign product with id first
+    products.push(product);
+    return product;
+  }  
+```
+
+Why does id appear first here?
+- A new object is created, with id assigned first.
+- The spread operator { id, ...product } ensures id is inserted before other properties.
+- The new structured object is then pushed into products.
+
+### 3. 'fileupload.middleware.js' file:
+```javascript
+// 1. Import Multer
+import multer from "multer";
+
+// 2. Configure storage with filename and location.
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "./uploads/");
+  },
+  filename: (req, file, cb) => {
+    //cb(null, new Date().toISOString() + file.originalname);
+    const timestamp = new Date().toISOString().replace(/:/g, "-");  //Change
+    cb(null, timestamp + "-" + file.originalname);
+  },
+});
+
+export const upload = multer({ storage: storage });
+```
+
+#### Why Replace : with - in Filenames on Windows?
+- toISOString() generates a timestamp like 2025-03-14T10:15:17.934Z
+- Windows does not allow colons (:) in filenames because they are reserved for drive paths (e.g., C:\Users\). If you try to save a file with : in its name, it will cause an error like "ENOENT: no such file or directory".
+
+#### Solution: Replace : with -
+- new Date().toISOString().replace(/:/g, "-")
+- Converts 2025-03-14T10:15:17.934Z → 2025-03-14T10-15-17.934Z
+- Ensures filenames are Windows-compatible without breaking the timestamp format. 🚀
+
+### 4. Test API using Postman
+
+<img src="./images/addProduct_api1.png" alt="Add Product API" width="600" height="auto">
+<img src="./images/addProduct_api2.png" alt="Add Product API" width="600" height="auto">
+
 ## Get one Product
- ### 1. Model function to return single Product:
+
+### 1. Model function to return single Product:
+
 - Uses the `find` method to search for a product in the products array.
 - Compares the given `id` with each product's id.
 - Returns the product if found; otherwise, returns undefined.
- ```javascript
- static get(id) {
-    const product = products.find((i) => i.id == id);
-    return product;
-  }
+
+```javascript
+static get(id) {
+   const product = products.find((i) => i.id == id);
+   return product;
+ }
 ```
 
 ### 2. Controller function to handle the GET request for a single product:
+
 - Extracts `id` from `req.params`.
 - Calls ProductModel.get(id) to fetch the product.
 - If the product exists, responds with a 200 status and the product data.
 - If not found, responds with a 404 status and an error message.
+
 ```javascript
  getOneProduct(req, res) {
     //const id = req.params.id;
@@ -655,18 +762,20 @@ productRouter.post(
 ```
 
 ### 3. Routing the GET request for a single product:
+
 - Defines a GET route with /:id as a parameter.
 - Calls getOneProduct from the controller when the route is accessed.
 - Ensures the correct handling of product retrieval requests.
+
 ```javascript
-productRouter.get('/:id', controller.getOneProduct);
+productRouter.get("/:id", controller.getOneProduct);
 ```
 
 ### 4. Test API using Postman
+
 <img src="./images/getOneProduct_postman_1.png" alt="Add Product API" width="600" height="auto">
 
 <img src="./images/getOneProduct_postman_2.png" alt="Add Product API" width="600" height="auto">
-
 
 Note: The actual implementation may require additional code and
 configuration depending on the framework or libraries used.
@@ -674,6 +783,7 @@ configuration depending on the framework or libraries used.
 ## Filter Products
 
 ### 1. Adding the filter function to the product model:
+
 - Defines a static filter method to filter products based on minPrice, maxPrice, and category.
 - Uses .filter() to iterate through the products array.
 - Conditions:
@@ -681,23 +791,25 @@ configuration depending on the framework or libraries used.
   - ✅ (!maxPrice || product.price <= maxPrice): If maxPrice is provided, it checks if the product price is less than or equal to maxPrice.
   - ✅ (!category || product.category == category): If category is provided, it checks if the product belongs to that category.
 - Returns the filtered result.
+
 ```javascript
 static filter(minPrice, maxPrice, category){
     const result = products.filter((product)=>{
       return(
-      (!minPrice || 
+      (!minPrice ||
         product.price >= minPrice) &&
-      (!maxPrice || 
+      (!maxPrice ||
         product.price <= maxPrice) &&
-      (!category || 
+      (!category ||
         product.category == category)
       );
     });
     return result;
   }
-  ```
+```
 
 ### 2. Implementing the filter products method in the controller:
+
 - Extracts minPrice, maxPrice, and category from req.query.
 - Calls ProductModel.filter(minPrice, maxPrice, category) to get the filtered list.
 - Sends the filtered products as a response with a 200 status code.
@@ -710,17 +822,20 @@ static filter(minPrice, maxPrice, category){
     const result = ProductModel.filter(minPrice, maxPrice, category);
     res.status(200).send(result);
   }
-  ```
+```
+
 #### What is req.query in Express, and when should it be used?
+
 - Definition: req.query is an object in Express that contains all the query string parameters sent in the URL of a GET request.
 - Usage: It is used to access values from the URL after the ? symbol, typically in query strings like ?minPrice=10&maxPrice=20.
 - ✅ Best for: Filtering, sorting, searching, and pagination.
 
 ### 3. Creating the filter API route:
+
 - Defines a GET API route /filter.
 - Calls productController.filterProducts to handle the filtering logic.
 - Returns products that match the provided filter criteria.
-  
+
 ```javascript
 /* Define specific routes first */
 //localhost:3000/api/products/filter?minPrice=10&maxPrice=20&category=Category1
@@ -734,52 +849,54 @@ productRouter.post(
 
 /* Define dynamic route last */
 productRouter.get("/:id", productController.getOneProduct);
-
 ```
 
 #### Why should the filter route be defined before the dynamic /:id route in Express?
+
 #### Reason:
+
 - In Express, routes are matched in the order they are defined.
 - If you define productRouter.get("/:id") before productRouter.get("/filter"), Express interprets "filter" as a dynamic id instead of a separate route.
 - So, when /filter is requested, Express tries to find a product with id="filter", which does not exist.
 
 #### Fix:
+
 - ✅ Always define specific routes first, followed by dynamic routes.
 - ✅ Place productRouter.get("/filter", productController.filterProducts); before productRouter.get("/:id", productController.getOneProduct);.
 
 ### 4. Test API using Postman
+
 ```sh
 http://localhost:3000/api/products/filter?minPrice=10&maxPrice=20&category=Category1
 ```
+
 <img src="./images/filterProducts_postman_1.png" alt="Filter Products API" width="600" height="auto">
 
 ```sh
 http://localhost:3000/api/products/filter?minPrice=10&maxPrice=30
 ```
+
 <img src="./images/filterProducts_postman_2.png" alt="Filter Products API" width="600" height="auto">
 
 🚀 Now, your API can filter products dynamically based on price and category!
 
 ## Summarising it
+
 Let’s summarise what we have learned in this module:
+
 - Explored difficulties encountered with MVC architecture.
 - Acquired knowledge about various types of APIs and their functionalities.
 - Gained insights into REST APIs and their practical uses.
 - Commenced the development of an E-Commerce API project.
 - Established a well-organized folder structure for the project.
 - Familiarized oneself with Express Router and established product routes for
-the project.
+  the project.
 - Designed the product model for the API project.
 - Successfully incorporated APIs for adding products, retrieving individual
-products, and filtering products.
+  products, and filtering products.
 
 ### Some Additional Resources:
+
 [Express routing](https://expressjs.com/en/guide/routing.html)
 
 [Multer: Easily upload files with Node.js and Expres](https://blog.logrocket.com/multer-nodejs-express-upload-file/)
-
-
-
-
-
-  
