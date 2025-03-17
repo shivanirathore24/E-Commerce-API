@@ -15,14 +15,13 @@ export default class ProductModel {
     product = { id: products.length + 1, ...product }; // Reassign product with id first
     products.push(product);
     return product;
-  }  
+  }
 
-// static add(product) {
-//   product.id = products.length + 1;
-//   products.push(product);
-//   return product;
-// }
-
+  // static add(product) {
+  //   product.id = products.length + 1;
+  //   products.push(product);
+  //   return product;
+  // }
 
   static getAll() {
     return products;
@@ -48,17 +47,17 @@ export default class ProductModel {
     // 1. Validate User
     const user = UserModel.getAll().find((u) => u.id == userID);
     if (!user) {
-      return "User not found";
+      throw new Error("User not found");
     }
     // 1. Validate Product
     const product = products.find((p) => p.id == productID);
     if (!product) {
-      return "Product not found";
+      throw new Error("Product not found");
     }
 
     // 3. Validate Rating Input
     if (!rating || isNaN(rating)) {
-      return "Please provide a valid rating.";
+      throw new Error("Please provide a valid rating.");
     }
 
     // 4. Check if there are ratings and if not then add rating array.
