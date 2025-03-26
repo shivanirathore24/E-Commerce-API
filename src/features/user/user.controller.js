@@ -1,9 +1,9 @@
 import { UserModel } from "./user.model.js";
 import jwt from "jsonwebtoken";
 export default class UserController {
-  signUp(req, res) {
+  async signUp(req, res) {
     const { name, email, password, type } = req.body;
-    const user = UserModel.signUp(name, email, password, type);
+    const user = await UserModel.signUp(name, email, password, type);
     res.status(201).send(user);
   }
 
@@ -17,7 +17,7 @@ export default class UserController {
         { userID: result.id, email: result.email }, // Payload data
         "N6BUpqT7VL8cI7VbzLHaaS9txwGJWZMR", // Secret key for signing
         {
-          expiresIn: "1h",   // Token expiry set to 1 hour
+          expiresIn: "1h", // Token expiry set to 1 hour
         }
       );
       //2. Send token.
