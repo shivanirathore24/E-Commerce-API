@@ -1,6 +1,3 @@
-import { getDB } from "../../../config/mongodb.js";
-import { ApplicationError } from "../../error-handler/applicationError.js";
-
 export class UserModel {
   constructor(name, email, password, type) {
     this.name = name;
@@ -9,11 +6,15 @@ export class UserModel {
     this.type = type;
   }
 
+  /*
   static getAll() {
     return users;
-  }
+  } 
+  */
 }
 
+/*
+//Hardcoded User Data
 let users = [
   {
     id: 1,
@@ -37,3 +38,4 @@ let users = [
     type: "customer",
   },
 ];
+*/

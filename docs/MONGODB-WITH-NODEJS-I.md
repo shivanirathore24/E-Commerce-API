@@ -397,10 +397,13 @@ import { getDB } from "../../../config/mongodb.js";
 import { ApplicationError } from "../../error-handler/applicationError.js";
 
 class UserRepository {
+  constructor() {
+    this.collection = "users";
+  }
   async signUp(newUser) {
     try {
       const db = getDB(); // 1. Get the database
-      const collection = db.collection("users"); // 2. Get the collection
+      const collection = db.collection(this.collection); // 2. Get the collection
       await collection.insertOne(newUser); // 3.Insert the document
       return newUser;
     } catch (err) {
@@ -409,10 +412,10 @@ class UserRepository {
     }
   }
 
-  async signIn(email, password) {
+ async signIn(email, password) {
     try {
       const db = getDB(); // 1. Get the database
-      const collection = db.collection("users"); // 2. Get the collection
+      const collection = db.collection(this.collection); // 2. Get the collection
       return await collection.findOne({ email, password }); // 3. Find the document
     } catch (err) {
       console.log(err);
@@ -483,10 +486,6 @@ export class UserModel {
     this.password = password;
     this.type = type;
   }
-
-  static getAll() {
-    return users;
-  }
 }
 ```
 #### Key Changes
@@ -495,9 +494,13 @@ export class UserModel {
     - The signIn method was also present in UserModel, which searched for a user in a static array.
     - In the updated code, both methods have been removed from UserModel.
 
-2. Now, UserModel Only Contains the Constructor and getAll():
-    - The updated version only defines the user schema (constructor) and keeps getAll() for retrieving static user data.
-    - This means UserModel is now a pure data model, and all logic related to user authentication is likely moved elsewhere (e.g., UserRepository).
+2. UserModel Now Only Contains the Constructor:
+    - The updated version defines only the user schema (constructor) without any methods.
+    - It no longer interacts with the database, making it a pure data model.
+
+3. Removed getAll Method:
+    - The getAll method, which retrieved static user data, has been removed.
+    - Now, all user-related queries are likely handled in UserRepository.
 
 #### Why These Changes?
 1. ✔ Separation of Concerns – Now, database interaction is handled separately (possibly in UserRepository).
@@ -770,7 +773,7 @@ async signUp(req, res) {
         if (result) {
           // 3. Create token
           const token = jwt.sign(
-            { userID: result.id, email: result.email }, // Payload data
+            { userID: user._id, email: user.email }, // Payload data
             "N6BUpqT7VL8cI7VbzLHaaS9txwGJWZMR", // Secret key for signing
             {
               expiresIn: "1h", // Token expiry set to 1 hour
@@ -797,6 +800,7 @@ async signUp(req, res) {
     - Instead of querying both email and password directly, the system first retrieves the user by email.
     - Then, bcrypt.compare(req.body.password, user.password) is used to check if the entered password matches the stored hashed password.
     - If the comparison returns true, authentication proceeds; otherwise, it is rejected.
+    - After successful authentication, a JWT token is generated using jwt.sign(), where user._id (instead of result.id) is used as MongoDB stores the unique identifier as _id. Previously, result came from this.userRepository.signIn(), which checked both email and password together. Now, the process is split: first, fetch the user by email (user), then verify the password. Since result is no longer used, we correctly reference user._id to ensure the JWT contains the right user ID, preventing authentication errors.
 
 #### Why These Changes?
 1. bcrypt.hash() for Secure Storage:
@@ -899,3 +903,667 @@ async signUp(req, res) {
     1. ✅ Security: Avoids exposing the secret key in code.
     2. ✅ Flexibility: Allows different environments (dev, production) to use different secrets.
     3. ✅ Best Practice: Credentials should be stored in environment variables, not hardcoded.
+
+## Secure Car Dealership Management with Repository Pattern in Node.js
+In this concise guide, we'll build a secure car dealership management system using
+Node.js, the Repository Pattern, the bcrypt library for password security, and the
+dotenv library for environment variables. Our scenario involves a car dealership
+managing its inventory and sales.
+#### Scenario: 
+You are developing a car dealership management system for "Speedy Motors." The
+system should securely store user credentials, manage car inventory, and track
+sales.
+
+### 1. User Authentication:
+
+#### Step 1: Repository Setup -> In 'user.repository.js'
+```javascript
+import { getDB } from '../config/mongodb.js';
+import bcrypt from 'bcrypt';
+import { ApplicationError } from '../../error-handler/applicationError.js';
+
+class UserRepository {
+    async signUp(newUser) {
+        try {
+            const db = await getDB();
+            const collection = db.collection("users");
+            
+            // Hash the password before storing
+            const hashedPassword = await bcrypt.hash(newUser.password, 10);
+            newUser.password = hashedPassword;
+            
+            // Insert user into the collection
+            await collection.insertOne(newUser);
+        } catch (err) {
+            throw new ApplicationError("Database Error", 500);
+        }
+    }
+
+    async signIn(email, password) {
+        try {
+            const db = await getDB();
+            const collection = db.collection("users");
+            
+            const user = await collection.findOne({ email });
+            
+            if (user && await bcrypt.compare(password, user.password)) {
+                return user;
+            } else {
+                return null;
+            }
+        } catch (err) {
+            throw new ApplicationError("Database Error", 500);
+        }
+    }
+}
+
+export default UserRepository;
+```
+
+#### Step 2: Controller and Routes -> In 'user.controller.js'
+```javascript
+import UserRepository from './user.repository.js';
+
+export default class UserController {
+    constructor() {
+        this.userRepository = new UserRepository();
+    }
+
+    async signUp(req, res) {
+        try {
+            const { name, email, password, role } = req.body;
+            const user = { name, email, password, role };
+            
+            const createdUser = await this.userRepository.signUp(user);
+            res.status(201).send({ message: "User registered", user: createdUser });
+        } catch (error) {
+            res.status(500).send({ message: "Error registering user", error: error.message });
+        }
+    }
+
+    async signIn(req, res) {
+        try {
+            const { email, password } = req.body;
+            const user = await this.userRepository.signIn(email, password);
+            
+            if (user) {
+                res.status(200).send({ message: "Sign in successful", user });
+            } else {
+                res.status(401).send({ message: "Invalid credentials" });
+            }
+        } catch (error) {
+            res.status(500).send({ message: "Error signing in", error: error.message });
+        }
+    }
+}
+```
+
+### 2. Car Inventory Management:
+#### Step 1: Repository Setup -> In 'car.repository.js'
+```javascript
+import { getDB } from '../../config/mongodb.js';
+import { ApplicationError } from "../../error-handler/applicationError.js";
+
+class CarRepository {
+    async add(newCar) {
+        try {
+            const db = await getDB();
+            const collection = db.collection("cars");
+            
+            await collection.insertOne(newCar);
+            return newCar;
+        } catch (err) {
+            throw new ApplicationError("Database Error", 500);
+        }
+    }
+
+    async getAll() {
+        try {
+            const db = await getDB();
+            const collection = db.collection("cars");
+            
+            const cars = await collection.find().toArray();
+            return cars;
+        } catch (err) {
+            throw new ApplicationError("Database Error", 500);
+        }
+    }
+    // Other methods for updating, filtering, and more...
+}
+
+export default CarRepository;
+```
+
+#### Step 2: Controller and Routes -> In 'car.controller.js'
+```javascript
+import CarRepository from './car.repository.js';
+
+export default class CarController {
+    constructor() {
+        this.carRepository = new CarRepository();
+    }
+
+    async addCar(req, res) {
+        try {
+            const { make, model, year, price } = req.body;
+            const newCar = { make, model, year, price };
+            
+            const createdCar = await this.carRepository.add(newCar);
+            res.status(201).send({ message: "Car added", car: createdCar });
+        } catch (error) {
+            res.status(500).send({ message: "Error adding car", error: error.message });
+        }
+    }
+
+    async getAllCars(req, res) {
+        try {
+            const cars = await this.carRepository.getAll();
+            res.status(200).send(cars);
+        } catch (error) {
+            res.status(500).send({ message: "Error retrieving cars", error: error.message });
+        }
+    }
+    // Other methods for managing car inventory...
+}
+```
+
+### 3. Environment Variables with dotenv:
+#### 1. Create a .env file:
+```env
+DB_CONNECTION_STRING=mongodb://localhost:27017/mydb
+SECRET_KEY=mysecretkey
+```
+
+#### 2. In config/mongodb.js:
+```javascript
+import dotenv from 'dotenv';
+dotenv.config();
+// Use process.env.DB_CONNECTION_STRING in your code
+```
+
+### Conclusion:
+By implementing the Repository Pattern, secure user authentication using bcrypt,
+and utilizing environment variables with dotenv, we've built a robust car dealership
+management system. This scenario-based approach covers user registration,
+authentication, car inventory, and sales tracking. The approach ensures data
+security, integrity, and scalability in your application.
+
+## Product Repository
+
+### 1. Created 'product.repository.js' file 
+The ProductRepository class is responsible for managing product-related database operations using MongoDB. It provides methods to add, retrieve, filter, and rate products. The repository pattern ensures a clean separation between database logic and business logic.
+```javascript
+import { ObjectId } from "mongodb";
+import { getDB } from "../../../config/mongodb.js";
+import { ApplicationError } from "../../error-handler/applicationError.js";
+
+class ProductRepository {
+  constructor() {
+    this.collection = "products";
+  }
+  async add(newProduct) {
+    try {
+      const db = getDB(); // 1. Get the DB
+      const collection = db.collection(this.collection); // 2. Get the collection
+      await collection.insertOne(newProduct); // 3. Find the document
+      return newProduct;
+    } catch (err) {
+      console.log(err);
+      throw new ApplicationError("Something went wrong with Data", 500);
+    }
+  }
+
+  async getAll() {
+    try {
+      const db = getDB();
+      const collection = db.collection(this.collection);
+      return await collection.find().toArray();
+    } catch (err) {
+      console.log(err);
+      throw new ApplicationError("Something went wrong with Data", 500);
+    }
+  }
+
+  async get(id) {
+    try {
+      const db = getDB();
+      const collection = db.collection(this.collection);
+      return await collection.findOne({ _id: new ObjectId(id) });
+    } catch (err) {
+      console.log(err);
+      throw new ApplicationError("Something went wrong with Data", 500);
+    }
+  }
+
+  async filter(minPrice, maxPrice, category) {
+    try {
+      const db = getDB();
+      const collection = db.collection(this.collection);
+      let filterExpression = {};
+      if (minPrice) {
+        filterExpression.price = { $gte: parseFloat(minPrice) };
+      }
+      if (maxPrice) {
+        filterExpression.price = {
+          ...filterExpression.price,
+          $lte: parseFloat(maxPrice),
+        };
+      }
+      if (category) {
+        filterExpression.category = category;
+      }
+      return collection.find(filterExpression).toArray();
+    } catch (err) {
+      console.log(err);
+      throw new ApplicationError("Something went wrong with Data", 500);
+    }
+  }
+
+  async rate(userID, productID, rating) {
+    try {
+      const db = getDB();
+      const collection = db.collection(this.collection);
+      await collection.updateOne(
+        {
+          _id: new ObjectId(productID),
+        },
+        {
+          $push: { ratings: { userID: new ObjectId(userID), rating } },
+        }
+      );
+    } catch (err) {
+      console.log(err);
+      throw new ApplicationError("Something went wrong with Data", 500);
+    }
+  }
+}
+
+export default ProductRepository;
+```
+#### Code Explaination:
+1. Constructor
+    - Initializes the repository and sets the MongoDB collection name to "products".
+    - This ensures all operations are performed on the "products" collection.
+2. add(newProduct) → Add a New Product
+    - Inserts a Product – Connects to the database and inserts a new product into the "products" collection.
+    - Uses insertOne() – Adds a single document (product) to the collection.
+    - Returns the Product – After insertion, the same product object is returned.
+    - Error Handling – Logs errors and throws a 500 status if something goes wrong.
+3. getAll() → Retrieve All Products
+    - Fetches All Products – Connects to the database and retrieves all documents from the "products" collection.
+    - Uses .find() – retrieves documents but returns a cursor, not actual data.
+    - Uses .toArray() – converts the cursor into a JavaScript array for easier use.
+    - Error Handling – Logs errors and throws a 500 status if something goes wrong.
+
+    NOTE:
+    1. Why Use .toArray()?
+        - .find() alone returns a cursor, which is a MongoDB object that allows iteration over documents without loading them all at once.
+        - .toArray() fetches all matching documents and stores them in an array, making it easier to work with in JavaScript.
+    2. When to Use .toArray()
+        - If you need all results at once (e.g., displaying all products in a UI).
+    3. When NOT to Use .toArray()
+        - If the dataset is very large, using .toArray() can cause high memory usage. Instead, you can iterate over the cursor:
+        ```javascript
+        const cursor = collection.find();
+        for await (const doc of cursor) {
+            console.log(doc); // Process each document one by one
+        }
+        ```
+4. get(id) → Retrieve a Product by ID
+    - Fetches a Single Product – Finds a product by its unique _id.
+    - Uses findOne() – Retrieves a single document matching the provided ID.
+    - Converts id to ObjectId – Since MongoDB uses ObjectId for _id, the given id is converted to an ObjectId.
+    - Error Handling – Logs errors and throws a 500 status if something goes wrong.
+5. filter(minPrice, maxPrice, category) → Filter Products
+    - Connects to MongoDB – Retrieves the "products" collection.
+    - Filters Products by Criteria – Searches products based on price range and category.
+    - Builds a filterExpression Object – Creates a dynamic filter based on provided parameters:
+      - minPrice – Includes products with price greater than or equal to minPrice.
+      - maxPrice – Includes products with price less than or equal to maxPrice.
+      - category – Filters products by category if provided.
+    - Uses .find(filterExpression) – Retrieves products matching the filter.
+    - Uses .toArray() – Converts the cursor into an array.
+    - Error Handling – Logs errors and throws a 500 status if something goes wrong.
+6. rate(userID, productID, rating) → Rate a Product
+    - Connects to MongoDB – Retrieves the "products" collection.
+    - Uses updateOne() – Updates the product document by adding a rating.
+    - Uses $push Operator – Adds a new rating inside the ratings array of the product.
+    - Converts userID and productID to ObjectId – Ensures the IDs are in MongoDB’s proper format.
+    - Error Handling – Catches and logs errors, throwing a 500 error if something goes wrong.
+
+### 2. Updated 'product.controller.js' file 
+
+#### Before Changes:
+```javascript
+import ProductModel from "./product.model.js";
+
+export default class ProductController {
+  getAllProducts(req, res) {
+    const products = ProductModel.getAll();
+    res.status(200).send(products);
+  }
+
+  addProduct(req, res) {
+    const { name, desc, price, imageUrl, category, sizes } = req.body;
+    const newProduct = {
+      name,
+      desc: desc || "No description available",
+      price: parseFloat(price),
+      imageUrl: req.file ? req.file.filename : imageUrl,
+      category: category || "Uncategorized",
+      sizes: Array.isArray(sizes)
+        ? sizes
+        : typeof sizes === "string"
+        ? sizes.split(",")
+        : [],
+    };
+    const createdRecord = ProductModel.add(newProduct);
+    res.status(201).send(createdRecord);
+  }
+
+
+  rateProduct(req, res, next) {
+    try {
+      console.log(req.query);
+      const userID = req.query.userID;
+      const productID = req.query.productID;
+      const rating = req.query.rating;
+      //Intentional error: Accessing 'req.querys' (undefined) will trigger the error handler middleware.
+      //const rating = req.querys.rating;
+      ProductModel.rateProduct(userID, productID, rating);
+      return res.status(200).send("Rating has been added !");
+    } catch (err) {
+      console.log("Passing error to middleware")
+      next(err);
+    }
+  } 
+
+  getOneProduct(req, res) {
+    //const id = req.params.id;
+    const { id } = req.params;
+    const product = ProductModel.get(id);
+    if (!product) {
+      res.status(404).send("Product not found !");
+    } else {
+      res.status(200).send(product);
+    }
+  }
+
+  filterProducts(req, res) {
+    const minPrice = req.query.minPrice;
+    const maxPrice = req.query.maxPrice;
+    const category = req.query.category;
+    const result = ProductModel.filter(minPrice, maxPrice, category);
+    res.status(200).send(result);
+  }
+}
+```
+
+#### After Changes:
+```javascript
+import ProductModel from "./product.model.js";
+import ProductRepository from "./product.repository.js";
+
+export default class ProductController {
+  constructor() {
+    this.productRepository = new ProductRepository();
+  }
+
+  async getAllProducts(req, res) {
+    try {
+      const products = await this.productRepository.getAll();
+      res.status(200).send(products);
+    } catch (err) {
+      console.log(err);
+      return res.status(200).send("Something went wrong");
+    }
+  }
+
+  async addProduct(req, res) {
+    try {
+      const { name, desc, price, imageUrl, category, sizes } = req.body;
+      const newProduct = new ProductModel(
+        name,
+        desc || "No description available",
+        parseFloat(price),
+        req.file ? req.file.filename : imageUrl,
+        category || "Uncategorized",
+        Array.isArray(sizes)
+          ? sizes
+          : typeof sizes === "string"
+          ? sizes.split(",")
+          : []
+      );
+      const createdProduct = await this.productRepository.add(newProduct);
+      res.status(201).send(createdProduct);
+    } catch (err) {
+      console.log(err);
+      return res.status(200).send("Something went wrong");
+    }
+  }
+
+  rateProduct(req, res, next) {
+    try {
+      console.log(req.query);
+      const userID = req.userID;
+      const productID = req.query.productID;
+      const rating = req.query.rating;
+      //Intentional error: Accessing 'req.querys' (undefined) will trigger the error handler middleware.
+      //const rating = req.querys.rating;
+      this.productRepository.rate(userID, productID, rating);
+      return res.status(200).send("Rating has been added !");
+    } catch (err) {
+      console.log(err);
+      console.log("Passing error to middleware");
+      next(err);
+    }
+  }
+
+  async getOneProduct(req, res) {
+    try {
+      //const id = req.params.id;
+      const { id } = req.params;
+      const product = await this.productRepository.get(id);
+      if (!product) {
+        res.status(404).send("Product not found !");
+      } else {
+        res.status(200).send(product);
+      }
+    } catch (err) {
+      console.log(err);
+      return res.status(200).send("Something went wrong");
+    }
+  }
+
+  async filterProducts(req, res) {
+    try {
+      const minPrice = req.query.minPrice;
+      const maxPrice = req.query.maxPrice;
+      const category = req.query.category;
+      const result = await this.productRepository.filter(
+        minPrice,
+        maxPrice,
+        category
+      );
+      res.status(200).send(result);
+    } catch (err) {
+      console.log(err);
+      return res.status(200).send("Something went wrong");
+    }
+  }
+}
+```
+The updated Product Controller improves error handling, database interaction, and code structure. Below is a detailed breakdown of changes and their impact.
+1. Introduced ProductRepository for Better Abstraction
+    - 🔄 Change:
+      - Introduced ProductRepository (import ProductRepository from "./product.repository.js";).
+      - Replaced `ProductModel` direct calls with `this.productRepository`, making the controller more modular and maintainable.
+    - ✅ Impact:
+      - Decouples business logic from the controller.
+      - Easier to modify data access logic in the future (e.g., switching from in-memory storage to a database).
+2. Introduced an async/await Pattern
+    - 🔄 Change:
+      - getAllProducts, addProduct, getOneProduct, and filterProducts are now asynchronous functions.
+      - Uses await when calling repository functions.
+    - ✅ Impact:
+       -  Ensures non-blocking execution (critical when working with databases or APIs).
+        - Prevents callback hell and improves readability.
+3. Added a Constructor to Initialize ProductRepository
+    - 🔄 Change:
+      - The class now has a constructor:
+      ```javascript
+      constructor() {
+        this.productRepository = new ProductRepository();
+      }
+      ```
+      - This avoids repeatedly creating new instances of ProductRepository.
+
+    - ✅ Impact:
+      - Better efficiency—reuses a single repository instance instead of creating a new one in every method.
+
+4. 4️⃣ Improved Error Handling
+    - 🔄 Change:
+        - Wrapped API logic inside try-catch blocks.
+        - Added error messages:
+        ```javascript
+        console.log(err);
+        return res.status(200).send("Something went wrong");
+        ```
+        - This was added in: getAllProduct, addProduct, getOneProduct, filterProducts
+
+    - ✅ Impact:
+        - Prevents crashes if an exception occurs.
+        - Better debugging with console.log(err).
+5. Changed addProduct to Use ProductModel Constructor
+    - 🔄 Change: 
+      - Instead of manually creating an object, it now uses the ProductModel class.
+        ```javascript
+        const newProduct = new ProductModel(
+          name,
+          desc || "No description available",
+          parseFloat(price),
+          req.file ? req.file.filename : imageUrl,
+          category || "Uncategorized",
+          Array.isArray(sizes)
+            ? sizes
+            : typeof sizes === "string"
+            ? sizes.split(",")
+            : []
+        );
+        ```
+    - ✅ Impact:
+      - Better object-oriented structure—ensures ProductModel handles validation and formatting.
+6. Updated rateProduct for Consistency
+    - 🔄 Change:
+      - Replaced req.query.userID with req.userID (possibly extracted from authentication middleware).
+      - Now calls this.productRepository.rate(...) instead of ProductModel.rateProduct(...).
+    - ✅ Impact:
+      - Security improvement—fetching userID from req.userID ensures it's authenticated.
+
+#### 🔹 Summary of Key Improvements
+1. ✅ Better Code Structure: Moved data-related logic to ProductRepository.
+2. ✅ Improved Performance: Uses a single repository instance instead of multiple.
+3. ✅ Enhanced Error Handling: Wrapped methods in try-catch for better fault tolerance.
+4. ✅ Asynchronous Execution: Used async/await to handle potential database queries efficiently.
+5. ✅ Better Object-Oriented Design: Used ProductModel constructor for better data representation.
+6. ✅ Security Fixes: Changed req.query.userID to req.userID for authentication consistency.
+
+Updated ProductController is now cleaner, modular, and optimized for real-world scalability! 🚀
+
+### 3. Updated 'product.model.js' file
+
+#### Before Changes:
+The id is passed as the first parameter.
+```javascript
+constructor(id, name, desc, price, imageUrl, category, sizes) {
+  this.id = id;
+  this.name = name;
+  this.desc = desc;
+  this.price = price;
+  this.imageUrl = imageUrl;
+  this.category = category;
+  this.sizes = sizes;
+}
+```
+
+#### After Changes:
+```javascript
+constructor(name, desc, price, imageUrl, category, sizes, id) {
+  this._id = id;
+  this.name = name;
+  this.desc = desc;
+  this.price = price;
+  this.imageUrl = imageUrl;
+  this.category = category;
+  this.sizes = sizes;
+}
+```
+- The order of parameters has changed—id is now the last parameter instead of the first.
+- id has been renamed to _id (possibly to indicate a private or internal property).
+- This change impacts how instances of ProductModel are created and how they store the id value.
+
+### 4. Updated 'product.routes.js' file
+The change is in how controller methods are called:
+#### Before Changes:
+```javascript
+/* Define specific routes first */
+productRouter.get("/filter", productController.filterProducts);
+productRouter.get("/", productController.getAllProducts);
+productRouter.post(
+  "/",
+  upload.single("imageUrl"),
+  productController.addProduct
+);
+productRouter.post("/rate", productController.rateProduct);
+
+/* Define dynamic route last */
+productRouter.get("/:id", productController.getOneProduct);
+```
+Controller methods were passed directly as references (e.g., productController.getAllProducts).
+#### After Changes:
+```javascript
+/* Define specific routes first */
+productRouter.get("/filter", (req, res) => {
+  productController.filterProducts(req, res);
+});
+productRouter.get("/", (req, res) => {
+  productController.getAllProducts(req, res);
+});
+productRouter.post("/", upload.single("imageUrl"), (req, res) => {
+  productController.addProduct(req, res);
+});
+productRouter.post("/rate", (req, res, next) => {
+  productController.rateProduct(req, res, next);
+});
+
+/* Define dynamic route last */
+productRouter.get("/:id", (req, res) => {
+  productController.getOneProduct(req, res);
+```
+Now they’re wrapped in arrow functions (e.g., (req, res) => productController.getAllProducts(req, res)).
+#### Why this change?
+- The change is needed because when you pass a method directly (e.g., productController.getAllProducts), this can become `undefined` inside the method.
+- Wrapping it in an arrow function (e.g., (req, res) => productController.getAllProducts(req, res)) preserves the correct `this` context, ensuring the method works as expected.
+
+## Summarising it
+Let’s summarise what we have learned in this module:
+- We learned how to establish a connection to the MongoDB database
+from a Node.js application.
+- Using MongoClient, we accessed the database, performed CRUD
+operations, and interacted with collections to store and retrieve data.
+- We explored the repository pattern, a design principle that separates
+data access logic from the rest of the application.
+- We delved into the crucial aspect of password security by hashing user
+passwords using the bcrypt library.
+- We also learned about environment variables, which helps in
+safeguarding our critical data such as database key.
+
+### Some Additional Resources:
+- [MongoDB Node.js Driver](https://www.npmjs.com/package/mongodb)
+- [bcrypt](https://www.npmjs.com/package/bcrypt)
+- [dotenv](https://www.npmjs.com/package/dotenv)
+
+
+
+
+
