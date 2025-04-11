@@ -1,13 +1,23 @@
 import CartItemsModel from "./cartItems.model.js";
+import CartItemsRepository from "./cartItems.repository.js";
+
 export class CartItemsController {
+  constructor() {
+    this.cartItemsRepository = new CartItemsRepository();
+  }
   add(req, res) {
-    //const { productID, quantity } = req.query;
-    /* Query parameters in req.query are always strings */
-    const productID = Number(req.query.productID);
-    const quantity = Number(req.query.quantity);
-    const userID = req.userID;
-    CartItemsModel.add(productID, userID, quantity);
-    res.status(201).send("Cart is updated !");
+    try {
+      //const { productID, quantity } = req.query;
+      /* Query parameters in req.query are always strings */
+      const productID = Number(req.query.productID);
+      const quantity = Number(req.query.quantity);
+      const userID = req.userID;
+      this.cartItemsRepository.add(productID, userID, quantity);
+      res.status(201).send("Cart is updated !");
+    } catch (err) {
+      console.log(err);
+      return res.status(200).send("Something went wrong");
+    }
   }
 
   get(req, res) {
