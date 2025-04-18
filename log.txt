@@ -32,3 +32,11 @@ Fri Mar 14 2025 20:22:45 GMT+0530 (India Standard Time) +  /api/cartItems/3 - {}
 {"level":"info","message":"/api/products - {}","service":"request-logging"}
 {"level":"info","message":"/api/products/rate - {\"productID\":\"67ee7c63add7474fde3581a8\",\"rating\":4.6}","service":"request-logging"}
 {"level":"info","message":"/api/products/rate - {\"productID\":\"67ee7c63add7474fde3581a8\",\"rating\":4.5}","service":"request-logging"}
+{"level":"info","message":"/api/cartItems - {\"productID\":\"67ee7c63add7474fde3581a8\",\"quantity\":6}","service":"request-logging"}
+{"level":"info","message":"/api/cartItems - {\"productID\":\"67ee6a25d1288853fe3fb790\",\"quantity\":5}","service":"request-logging"}
+{"level":"info","message":"/api/cartItems - {\"productID\":\"67ee7fc2add7474fde3581ae\",\"quantity\":7}","service":"request-logging"}
+{"level":"info","message":"/api/cartItems - {}","service":"request-logging"}
+{"level":"info","message":"/api/cartItems - {}","service":"request-logging"}
+{"level":"info","message":"/api/cartItems/6801df6cfc2672e68ccb59a7 - {}","service":"request-logging"}
+{"level":"info","message":"/api/cartItems/6801df6cfc2672e68ccb59a7 - {}","service":"request-logging"}
+
