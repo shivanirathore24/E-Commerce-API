@@ -333,3 +333,61 @@ Get cartItems by User-2
 <img src="./images/deleteCartItem_postman1.png" alt="Mongo Driver" width="650" height="auto">
 <img src="./images/deleteCartItem_MongoDBCompass.png" alt="Mongo Driver" width="650" height="auto">
 <img src="./images/deleteCartItem_postman2.png" alt="Mongo Driver" width="650" height="auto">
+
+## Update Quantity Of CartItem
+
+### 1. Updated 'cartItems.repository.js' file
+
+The only changed part in updated `add` function is the database operation inside the try block.
+
+#### Before Change:
+
+```javascript
+await collection.insertOne({
+  productID: new ObjectId(productID),
+  userID: new ObjectId(userID),
+  quantity,
+});
+```
+
+- What it does: Always inserts a new document into the database.
+- Problem: If the same product for the same user is added again, it will create duplicate entries.
+
+#### After Change:
+
+```javascript
+// Add a new product to the cart or update quantity if it already exists
+await collection.updateOne(
+  { productID: new ObjectId(productID), userID: new ObjectId(userID) },
+  {
+    $inc: {
+      quantity: quantity,
+    },
+  },
+  { upsert: true } // Insert new document if no match is found
+);
+```
+
+What it does:
+
+- Checks if a document exists with the given productID and userID.
+- If it exists, it increments the quantity.
+- If it does not exist, it inserts a new document (upsert: true).
+
+#### ✅ Why the change was made?
+
+1. To avoid duplicate entries for the same product-user pair.
+2. To increase quantity if the item already exists.
+3. Makes the add function smarter by handling both insert and update in one step.
+
+### 2. Testing in Postman
+
+#### Added a new product to the cart
+
+<img src="./images/updateCartItem_postman1.png" alt="Mongo Driver" width="650" height="auto">
+<img src="./images/updateCartItem_MongoDBCompass1.png" alt="Mongo Driver" width="650" height="auto">
+
+#### Updated the quantity of an existing product in the cart
+
+<img src="./images/updateCartItem_postman2.png" alt="Mongo Driver" width="650" height="auto">
+<img src="./images/updateCartItem_MongoDBCompass2.png" alt="Mongo Driver" width="650" height="auto">
