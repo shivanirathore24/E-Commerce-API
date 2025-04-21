@@ -634,7 +634,7 @@ export default class UserController {
       }
     } catch (err) {
       console.log(err);
-      return res.status(200).send("Something went wrong");
+      return res.status(500).send("Something went wrong");
     }
   }
 }
@@ -826,7 +826,7 @@ async signUp(req, res) {
       }
     } catch (err) {
       console.log(err);
-      return res.status(200).send("Something went wrong");
+      return res.status(500).send("Something went wrong");
     }
   }
 ```
@@ -868,7 +868,7 @@ async signUp(req, res) {
       }
     } catch (err) {
       console.log(err);
-      return res.status(200).send("Something went wrong");
+      return res.status(500).send("Something went wrong");
     }
   }
 ```
@@ -1433,7 +1433,7 @@ export default class ProductController {
       res.status(200).send(products);
     } catch (err) {
       console.log(err);
-      return res.status(200).send("Something went wrong");
+      return res.status(500).send("Something went wrong");
     }
   }
 
@@ -1456,7 +1456,7 @@ export default class ProductController {
       res.status(201).send(createdProduct);
     } catch (err) {
       console.log(err);
-      return res.status(200).send("Something went wrong");
+      return res.status(500).send("Something went wrong");
     }
   }
 
@@ -1489,7 +1489,7 @@ export default class ProductController {
       }
     } catch (err) {
       console.log(err);
-      return res.status(200).send("Something went wrong");
+      return res.status(500).send("Something went wrong");
     }
   }
 
@@ -1506,7 +1506,7 @@ export default class ProductController {
       res.status(200).send(result);
     } catch (err) {
       console.log(err);
-      return res.status(200).send("Something went wrong");
+      return res.status(500).send("Something went wrong");
     }
   }
 }
@@ -1554,7 +1554,7 @@ The updated Product Controller improves error handling, database interaction, an
 
      ```javascript
      console.log(err);
-     return res.status(200).send("Something went wrong");
+     return res.status(500).send("Something went wrong");
      ```
 
      - This was added in: getAllProduct, addProduct, getOneProduct, filterProducts
