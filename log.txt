@@ -47,3 +47,13 @@ Fri Mar 14 2025 20:22:45 GMT+0530 (India Standard Time) +  /api/cartItems/3 - {}
 {"level":"info","message":"/api/products/filter?minPrice=400&maxPrice=1000&category=[%27Computers%27,%20%27Geography%27] - {}","service":"request-logging"}
 {"level":"info","message":"/api/products/filter?minPrice=900&maxPrice=1700&category=[%27Computers%27,%20%27Geography%27] - {}","service":"request-logging"}
 {"level":"info","message":"/api/products/averagePrice - {}","service":"request-logging"}
+{"level":"info","message":"/api/products/rate - {\"productID\":\"67ee7c63add7474fde3581a8\",\"rating\":5}","service":"request-logging"}
+{"level":"info","message":"/api/products/rate - {\"productID\":\"67ee6a25d1288853fe3fb790\",\"rating\":5}","service":"request-logging"}
+{"level":"info","message":"/api/products/rate - {\"productID\":\"67ee6a25d1288853fe3fb790\",\"rating\":4.5}","service":"request-logging"}
+{"level":"info","message":"/api/products/rate - {\"productID\":\"67ee6c4f68575511885c7f7a\",\"rating\":4}","service":"request-logging"}
+{"level":"info","message":"/api/products/rate - {\"productID\":\"67ee6c4f68575511885c7f7a\",\"rating\":4.2}","service":"request-logging"}
+{"level":"info","message":"/api/products/rate - {\"productID\":\"67ee6cef68575511885c7f7b\",\"rating\":4}","service":"request-logging"}
+{"level":"info","message":"/api/products/rate - {\"productID\":\"67ee7cfaadd7474fde3581a9\",\"rating\":4.6}","service":"request-logging"}
+{"level":"info","message":"/api/products/rate - {\"productID\":\"67ee7fc2add7474fde3581ae\",\"rating\":4.2}","service":"request-logging"}
+{"level":"info","message":"/api/products/rate - {\"productID\":\"67ee7fc2add7474fde3581ae\",\"rating\":4.9}","service":"request-logging"}
+{"level":"info","message":"/api/products/rate - {\"productID\":\"67ee7fc2add7474fde3581ae\",\"rating\":4.5}","service":"request-logging"}
