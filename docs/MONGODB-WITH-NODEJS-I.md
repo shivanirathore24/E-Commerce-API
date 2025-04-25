@@ -1750,6 +1750,7 @@ In this example, elements matching "value1" and "value2" will be removed from th
 arrayField.
 
 ### 1. Updated 'product.controller.js' file
+
 #### Before Changes
 
 ```javascript

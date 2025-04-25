@@ -17,6 +17,10 @@ export const connectToMongoDB = async () => {
   }
 };
 
+export const getClient = () => {
+  return client;
+};
+
 export const getDB = () => {
   if (!client) {
     throw new Error("MongoDB client is not connected.");
@@ -46,3 +50,4 @@ const createIndexes = async (db) => {
   }
   console.log("Indexes are created");
 };
+
