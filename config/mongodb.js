@@ -50,4 +50,3 @@ const createIndexes = async (db) => {
   }
   console.log("Indexes are created");
 };
-
