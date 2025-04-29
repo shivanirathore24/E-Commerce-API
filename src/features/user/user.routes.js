@@ -8,8 +8,8 @@ const userRouter = express.Router();
 const userController = new UserController();
 
 // Define authentication routes
-userRouter.post("/signup", (req, res) => {
-  userController.signUp(req, res);
+userRouter.post("/signup", (req, res, next) => {
+  userController.signUp(req, res, next);
 }); // User registration
 userRouter.post("/signin", (req, res) => {
   userController.signIn(req, res); // User login
