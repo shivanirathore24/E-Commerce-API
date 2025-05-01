@@ -121,7 +121,7 @@ import mongoose from "mongoose";
 export const productSchema = new mongoose.Schema({
   name: String,
   price: Number,
-  categpry: String,
+  category: String,
   description: String,
   inStock: Number,
 });
@@ -234,7 +234,7 @@ MVC Model = deals with all the business logic + database + validation in your ap
 
 ### 1. Updated 'user.repository.js' file
 
-Moved existing code from user.repository.js to user.repository_ols.js, and added new code to a fresh user.repository.js file:
+Moved existing code from user.repository.js to user.repository_old.js, and added new code to a fresh user.repository.js file:
 
 ```javascript
 import mongoose from "mongoose";
