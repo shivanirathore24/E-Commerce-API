@@ -67,4 +67,5 @@ Fri Mar 14 2025 20:22:45 GMT+0530 (India Standard Time) +  /api/cartItems/3 - {}
 {"level":"info","message":"/api/likes - {\"type\":\"Category\",\"id\":\"6814a18bd899fd99f82d5759\"}","service":"request-logging"}
 {"level":"info","message":"/api/likes?id=6814a342d899fd99f82d575e&type=Product - {}","service":"request-logging"}
 {"level":"info","message":"/api/likes?id=6814a18bd899fd99f82d5759&type=Category - {}","service":"request-logging"}
-
+{"level":"info","message":"/api/likes - {\"type\":\"Product\",\"id\":\"6814a9333fead3bd7aec6523\"}","service":"request-logging"}
+{"level":"info","message":"/api/likes?id=6814a9333fead3bd7aec6523&type=Product - {}","service":"request-logging"}
