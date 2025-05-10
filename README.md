@@ -22,3 +22,4 @@
 ### 🚀 Mastering Mongoose for MongoDB
 8. [Working with Mongoose-I](docs/WORKING-WITH-MONGOOSE-I.md)
 9.  [Working with Mongoose-II](docs/WORKING-WITH-MONGOOSE-II.md)
+10. [MongoDB to Mongoose Migration](docs/MONGODB-TO-MONGOOSE.md)
