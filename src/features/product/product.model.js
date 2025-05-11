@@ -1,5 +1,5 @@
 export default class ProductModel {
-  constructor(name, desc, price, imageUrl, categories, sizes, id) {
+  constructor(name, desc, price, imageUrl, categories, sizes, stock, id) {
     this._id = id;
     this.name = name;
     this.desc = desc;
@@ -7,6 +7,7 @@ export default class ProductModel {
     this.imageUrl = imageUrl;
     this.categories = categories;
     this.sizes = sizes;
+    this.stock = stock;
   }
 }
 
